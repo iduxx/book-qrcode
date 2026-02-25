@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>动态二维码 - 静态版</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        font-family: sans-serif;
+        background-color: #f4f4f9;
+      }
+      #qrcode {
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      .info {
+        margin-top: 20px;
+        text-align: center;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="qrcode"></div>
+    <div class="info">
+      <p id="time-display">正在获取时间...</p>
+      <p style="font-size: 12px; color: #999">每分钟自动刷新</p>
+    </div>
+
+    <script>
+      const qrContainer = document.getElementById("qrcode");
+      const timeDisplay = document.getElementById("time-display");
+
+      // 初始化二维码对象
+      const qrcode = new QRCode(qrContainer, {
+        width: 256,
+        height: 256,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H, // 高容错率
+      });
+
+      function updateQRCode() {
+        // 1. 获取北京时间 (UTC+8)
+        const now = new Date();
+        const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+        const beijingTime = new Date(utc + 3600000 * 8);
+
+        // 2. 计算今天的总分钟数
+        const hours = beijingTime.getHours();
+        const minutes = beijingTime.getMinutes();
+        const totalMinutes = hours * 60 + minutes;
+
+        // 3. 构造 MD5 字符串
+        const rawStr = `leosys@advert+${totalMinutes}`;
+        const md5Hash = CryptoJS.MD5(rawStr).toString();
+
+        // 4. 更新二维码
+        qrcode.clear();
+        qrcode.makeCode(md5Hash);
+
+        // 5. 更新界面显示
+        const displayMin = minutes < 10 ? "0" + minutes : minutes;
+        timeDisplay.innerText = `北京时间: ${hours}:${displayMin} \n Hash: ${md5Hash}`;
+
+        console.log("Current Raw:", rawStr);
+        console.log("Current MD5:", md5Hash);
+      }
+
+      // 初始运行
+      updateQRCode();
+
+      // 每秒检查一次，如果分钟发生变化就更新
+      setInterval(() => {
+        const s = new Date().getSeconds();
+        if (s === 0) {
+          updateQRCode();
+        }
+      }, 1000);
+    </script>
+  </body>
+</html>
